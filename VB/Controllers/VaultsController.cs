@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using VB.Data;
 using VB.Models;
 using VB.Helpers;
-using Microsoft.AspNetCore.Authorization;
-
+using System.Linq;
 
 namespace VB.Controllers
 {
@@ -18,37 +14,31 @@ namespace VB.Controllers
     public class VaultsController : Controller
     {
         private readonly ApplicationDbContext _context;
-      
+        private readonly IEncryptionHelper _encryptionHelper;
 
-        public VaultsController(ApplicationDbContext context)
+        public VaultsController(ApplicationDbContext context, IEncryptionHelper encryptionHelper)
         {
-            _context = context;
-           
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _encryptionHelper = encryptionHelper ?? throw new ArgumentNullException(nameof(encryptionHelper));
         }
-     
+
         // GET: Vaults
         public async Task<IActionResult> Index()
         {
-              return _context.Vault != null ? 
-                          View(await _context.Vault.ToListAsync()) :
-                          Problem("Entity set 'ApplicationDbContext.Vault'  is null.");
+            var vaults = await _context.Vault.ToListAsync();
+            return View(vaults);
         }
 
         // GET: Vaults/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Details(int id)
         {
-            if (id == null || _context.Vault == null)
-            {
-                return NotFound();
-            }
-
-            var vault = await _context.Vault
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var vault = await _context.Vault.FindAsync(id);
             if (vault == null)
             {
                 return NotFound();
             }
-            vault.Password = EncryptionHelper.DecryptString(vault.Password);
+
+            vault.Password = _encryptionHelper.DecryptString(vault.Password);
             return View(vault);
         }
 
@@ -59,16 +49,13 @@ namespace VB.Controllers
         }
 
         // POST: Vaults/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Username,Password,Email,Url,WebsiteName")] Vault vault)
+        public async Task<IActionResult> Create([Bind("Username,Password,Email,Url,WebsiteName")] Vault vault)
         {
             if (ModelState.IsValid)
             {
-                vault.Password = EncryptionHelper.EncryptString(vault.Password);
-
+                vault.Password = _encryptionHelper.EncryptString(vault.Password);
                 _context.Add(vault);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -77,25 +64,19 @@ namespace VB.Controllers
         }
 
         // GET: Vaults/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null || _context.Vault == null)
-            {
-                return NotFound();
-            }
-
             var vault = await _context.Vault.FindAsync(id);
             if (vault == null)
             {
                 return NotFound();
             }
-         
+
+            vault.Password = _encryptionHelper.DecryptString(vault.Password);
             return View(vault);
         }
 
         // POST: Vaults/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Username,Password,Email,Url,WebsiteName")] Vault vault)
@@ -109,7 +90,7 @@ namespace VB.Controllers
             {
                 try
                 {
-                    vault.Password = EncryptionHelper.EncryptString(vault.Password);
+                    vault.Password = _encryptionHelper.EncryptString(vault.Password);
                     _context.Update(vault);
                     await _context.SaveChangesAsync();
                 }
@@ -126,20 +107,13 @@ namespace VB.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-
             return View(vault);
         }
 
         // GET: Vaults/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (id == null || _context.Vault == null)
-            {
-                return NotFound();
-            }
-
-            var vault = await _context.Vault
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var vault = await _context.Vault.FindAsync(id);
             if (vault == null)
             {
                 return NotFound();
@@ -153,23 +127,20 @@ namespace VB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Vault == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.Vault'  is null.");
-            }
             var vault = await _context.Vault.FindAsync(id);
-            if (vault != null)
+            if (vault == null)
             {
-                _context.Vault.Remove(vault);
+                return NotFound();
             }
-            
+
+            _context.Vault.Remove(vault);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool VaultExists(int id)
         {
-          return (_context.Vault?.Any(e => e.Id == id)).GetValueOrDefault();
+            return _context.Vault.Any(e => e.Id == id);
         }
     }
 }

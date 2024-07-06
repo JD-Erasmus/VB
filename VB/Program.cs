@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using VB.Data;
+using VB.Helpers;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,9 +19,11 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.SignIn.RequireConfirmedAccount = false;
 })
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
 builder.Services.AddControllersWithViews();
 
-
+// Register IEncryptionHelper
+builder.Services.AddSingleton<IEncryptionHelper, EncryptionHelper>();
 
 var app = builder.Build();
 

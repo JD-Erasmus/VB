@@ -2,47 +2,79 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+
 namespace VB.Helpers
 {
-
-    public static class EncryptionHelper
+    public class EncryptionHelper : IEncryptionHelper
     {
-        private const string EncryptionKey = "16CharKeyForAES!"; // Replace with your secure key
+        private readonly string _encryptionKey;
+        private const int KeySize = 256;
+        private const int BlockSize = 128;
+        private const int IvSize = 16;
 
-        public static string EncryptString(string plainText)
+        public EncryptionHelper(IConfiguration configuration)
         {
-            using Aes aesAlg = Aes.Create();
-            aesAlg.Key = Encoding.UTF8.GetBytes(EncryptionKey);
-            aesAlg.IV = new byte[16]; // Initialization vector, can be randomly generated
+            _encryptionKey = configuration["ENCRYPTION_KEY"]
+                ?? throw new InvalidOperationException("Encryption key is not set in configuration.");
+        }
 
-            ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+        public string EncryptString(string plainText)
+        {
+            if (string.IsNullOrEmpty(plainText))
+                throw new ArgumentException("Plain text cannot be empty.", nameof(plainText));
 
-            using MemoryStream msEncrypt = new MemoryStream();
-            using CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
-            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+            using var aes = Aes.Create();
+            aes.KeySize = KeySize;
+            aes.BlockSize = BlockSize;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            aes.GenerateIV();
+            var iv = aes.IV;
+
+            using var deriveBytes = new Rfc2898DeriveBytes(_encryptionKey, iv, 1000, HashAlgorithmName.SHA256);
+            aes.Key = deriveBytes.GetBytes(aes.KeySize / 8);
+
+            using var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+            using var memoryStream = new MemoryStream();
+
+            memoryStream.Write(iv, 0, iv.Length);
+
+            using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
+            using (var streamWriter = new StreamWriter(cryptoStream))
             {
-                swEncrypt.Write(plainText);
+                streamWriter.Write(plainText);
             }
 
-            return Convert.ToBase64String(msEncrypt.ToArray());
+            return Convert.ToBase64String(memoryStream.ToArray());
         }
 
-        public static string DecryptString(string cipherText)
+        public string DecryptString(string cipherText)
         {
-            byte[] cipherBytes = Convert.FromBase64String(cipherText);
+            if (string.IsNullOrEmpty(cipherText))
+                throw new ArgumentException("Cipher text cannot be empty.", nameof(cipherText));
 
-            using Aes aesAlg = Aes.Create();
-            aesAlg.Key = Encoding.UTF8.GetBytes(EncryptionKey);
-            aesAlg.IV = new byte[16]; // Initialization vector, should match IV used for encryption
+            var cipherBytes = Convert.FromBase64String(cipherText);
 
-            ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+            using var aes = Aes.Create();
+            aes.KeySize = KeySize;
+            aes.BlockSize = BlockSize;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
 
-            using MemoryStream msDecrypt = new MemoryStream(cipherBytes);
-            using CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
-            using StreamReader srDecrypt = new StreamReader(csDecrypt);
+            var iv = new byte[IvSize];
+            Array.Copy(cipherBytes, 0, iv, 0, iv.Length);
 
-            return srDecrypt.ReadToEnd();
+            using var deriveBytes = new Rfc2898DeriveBytes(_encryptionKey, iv, 1000, HashAlgorithmName.SHA256);
+            aes.Key = deriveBytes.GetBytes(aes.KeySize / 8);
+            aes.IV = iv;
+
+            using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+            using var memoryStream = new MemoryStream(cipherBytes, iv.Length, cipherBytes.Length - iv.Length);
+            using var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
+            using var streamReader = new StreamReader(cryptoStream);
+
+            return streamReader.ReadToEnd();
         }
     }
-
 }
