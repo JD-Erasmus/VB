@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using VB.Data;
 using VB.Helpers;
+using VB.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,7 @@ builder.Services.AddControllersWithViews();
 
 // Register IEncryptionHelper
 builder.Services.AddSingleton<IEncryptionHelper, EncryptionHelper>();
+builder.Services.AddTransient<PasswordService>();
 
 var app = builder.Build();
 
@@ -49,7 +51,7 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Vaults}/{action=Index}/{id?}");
 app.MapRazorPages();
 
 app.Run();

@@ -7,6 +7,7 @@ using VB.Data;
 using VB.Models;
 using VB.Helpers;
 using System.Linq;
+using VB.Services;
 
 namespace VB.Controllers
 {
@@ -15,11 +16,13 @@ namespace VB.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IEncryptionHelper _encryptionHelper;
+        private readonly PasswordService _passwordService;
 
-        public VaultsController(ApplicationDbContext context, IEncryptionHelper encryptionHelper)
+        public VaultsController(ApplicationDbContext context, IEncryptionHelper encryptionHelper, PasswordService passwordService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _encryptionHelper = encryptionHelper ?? throw new ArgumentNullException(nameof(encryptionHelper));
+            _passwordService = passwordService;
         }
 
         // GET: Vaults
@@ -46,6 +49,12 @@ namespace VB.Controllers
         public IActionResult Create()
         {
             return View();
+        }
+        [HttpGet]
+        public IActionResult GeneratePassword()
+        {
+            var generatedPassword = _passwordService.GeneratePassword();
+            return Json(new { password = generatedPassword });
         }
 
         // POST: Vaults/Create
