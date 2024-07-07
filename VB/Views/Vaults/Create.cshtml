@@ -1,14 +1,7 @@
 ﻿@model VB.Models.Vault
-
-@{
-    ViewData["Title"] = "Create";
-}
-
-<h1>Create</h1>
-
-<h4>Vault</h4>
+<h4 class="text-center">Create new password</h4>
 <hr />
-<div class="row">
+<div class="row justify-content-center">
     <div class="col-md-4">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
@@ -23,6 +16,7 @@
                 <span asp-validation-for="Password" class="text-danger"></span>
                 <button type="button" class="btn btn-default" id="generatePasswordBtn">Generate Password</button>
                 <button type="button" class="btn btn-default" id="revealPasswordBtn">Reveal Password</button>
+                <button type="button" class="btn btn-default" id="copyPasswordBtn">Copy</button>
             </div>
             <div class="form-group">
                 <label asp-for="Email" class="control-label"></label>
@@ -74,6 +68,22 @@
                 passwordInput.type = 'password';
                 revealPasswordBtn.textContent = 'Reveal Password';
             }
+        });
+        document.getElementById('copyPasswordBtn').addEventListener('click', function () {
+            var passwordInput = document.getElementById('passwordInput');
+            passwordInput.type = "text"; // Temporarily change to text to copy
+            passwordInput.select();
+            passwordInput.setSelectionRange(0, 99999); // For mobile devices
+
+            try {
+                var successful = document.execCommand('copy');
+                var msg = successful ? 'successful' : 'unsuccessful';
+                alert('Copying password was ' + msg);
+            } catch (err) {
+                console.error('Oops, unable to copy', err);
+            }
+
+            
         });
     </script>
 }
