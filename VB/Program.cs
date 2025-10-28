@@ -33,6 +33,9 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
+
+    // Seed default Identity user only in Development
+    await VB.Data.IdentityDataSeeder.SeedAsync(app.Services);
 }
 else
 {
