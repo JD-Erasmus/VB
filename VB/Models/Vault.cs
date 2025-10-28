@@ -8,6 +8,10 @@ namespace VB.Models
         public int Id { get; set; }
 
         [Required]
+        [StringLength(450)]
+        public string UserId { get; set; } = string.Empty;
+
+        [Required]
         [StringLength(100, MinimumLength = 3)]
         public string Username { get; set; }
 

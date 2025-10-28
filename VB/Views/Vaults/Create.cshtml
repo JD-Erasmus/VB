@@ -1,4 +1,4 @@
-﻿@model VB.Models.Vault
+@model VB.Models.Vault
 <h4 class="text-center">Create new password</h4>
 <hr />
 <div class="row justify-content-center">
@@ -14,11 +14,29 @@
 
             <div class="mb-3">
                 <label asp-for="Password" class="form-label"></label>
-                <div class="input-group">
-                    <input asp-for="Password" class="form-control" id="passwordInput" type="password" />
-                    <button type="button" class="btn btn-outline-secondary" id="revealPasswordBtn" aria-label="Reveal or hide password">Show</button>
-                    <button type="button" class="btn btn-outline-secondary" id="copyPasswordBtn" aria-label="Copy password">Copy</button>
-                    <button type="button" class="btn btn-outline-primary" id="generatePasswordBtn" aria-label="Generate strong password">Generate</button>
+                <div class="input-group"
+                     data-password-tools
+                     data-generate-url="@Url.Action("GeneratePassword", "Vaults")">
+                    <input asp-for="Password"
+                           class="form-control"
+                           id="passwordInput"
+                           type="password"
+                           data-password-input />
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-password-action="toggle"
+                            data-label-show="Show"
+                            data-label-hide="Hide">Show</button>
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-password-action="copy"
+                            data-label-default="Copy"
+                            data-label-done="Copied!">Copy</button>
+                    <button type="button"
+                            class="btn btn-outline-primary"
+                            data-password-action="generate"
+                            data-label-default="Generate"
+                            data-label-busy="Generating...">Generate</button>
                 </div>
                 <div class="form-text">Use Generate to create a strong password, Show to view, and Copy to clipboard.</div>
                 <span asp-validation-for="Password" class="text-danger"></span>
@@ -53,75 +71,88 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script>
-        const passwordInput = document.getElementById('passwordInput');
-        const generateBtn = document.getElementById('generatePasswordBtn');
-        const revealBtn = document.getElementById('revealPasswordBtn');
-        const copyBtn = document.getElementById('copyPasswordBtn');
+        (function () {
+            const passwordInput = document.querySelector('[data-password-input]');
+            const generateBtn = document.querySelector('[data-password-action="generate"]');
+            const toggleBtn = document.querySelector('[data-password-action="toggle"]');
+            const copyBtn = document.querySelector('[data-password-action="copy"]');
 
-        const toast = (icon, title) => {
-            if (window.Swal) {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 1500,
-                    timerProgressBar: true
-                });
-                Toast.fire({ icon, title });
-            }
-        };
-
-        generateBtn?.addEventListener('click', async function () {
-            try {
-                generateBtn.disabled = true;
-                generateBtn.textContent = 'Generating…';
-                const response = await fetch('/Vaults/GeneratePassword');
-                if (!response.ok) throw new Error('Failed to generate');
-                const data = await response.json();
-                passwordInput.value = data.password || '';
-                toast('success', 'Strong password generated');
-            } catch (error) {
-                console.error('Error generating password:', error);
-                toast('error', 'Could not generate password');
-            } finally {
-                generateBtn.textContent = 'Generate';
-                generateBtn.disabled = false;
-            }
-        });
-
-        revealBtn?.addEventListener('click', function () {
-            const showing = passwordInput.type === 'text';
-            passwordInput.type = showing ? 'password' : 'text';
-            revealBtn.textContent = showing ? 'Show' : 'Hide';
-        });
-
-        copyBtn?.addEventListener('click', async function () {
-            try {
-                if (navigator.clipboard?.writeText) {
-                    await navigator.clipboard.writeText(passwordInput.value);
+            const toast = (icon, title) => {
+                if (!title) return;
+                if (window.Swal) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: icon || 'info',
+                        title,
+                        showConfirmButton: false,
+                        timer: 1600,
+                        timerProgressBar: true
+                    });
                 } else {
-                    // Fallback for older browsers
-                    const originalType = passwordInput.type;
-                    passwordInput.type = 'text';
-                    passwordInput.select();
-                    passwordInput.setSelectionRange(0, passwordInput.value.length);
-                    document.execCommand('copy');
-                    passwordInput.type = originalType;
+                    console.log(`[${icon || 'info'}] ${title}`);
                 }
+            };
+
+            generateBtn?.addEventListener('click', async () => {
+                if (!passwordInput) return;
+                const original = generateBtn.textContent;
+                try {
+                    generateBtn.disabled = true;
+                    generateBtn.textContent = generateBtn.dataset.labelBusy || 'Generating...';
+                    const response = await fetch('@Url.Action("GeneratePassword", "Vaults")', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+                    const payload = await response.json();
+                    passwordInput.value = payload.password || '';
+                    toast('success', 'Strong password generated');
+                } catch (error) {
+                    console.error('Generate password failed', error);
+                    toast('error', 'Could not generate password');
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = original;
+                }
+            });
+
+            toggleBtn?.addEventListener('click', () => {
+                if (!passwordInput) return;
+                const showing = passwordInput.type === 'text';
+                passwordInput.type = showing ? 'password' : 'text';
+                toggleBtn.textContent = showing
+                    ? (toggleBtn.dataset.labelShow || 'Show')
+                    : (toggleBtn.dataset.labelHide || 'Hide');
+            });
+
+            copyBtn?.addEventListener('click', async () => {
+                if (!passwordInput?.value) {
+                    toast('info', 'No password to copy');
+                    return;
+                }
+
                 const original = copyBtn.textContent;
-                copyBtn.textContent = 'Copied!';
-                copyBtn.classList.remove('btn-outline-secondary');
-                copyBtn.classList.add('btn-success');
-                toast('success', 'Password copied to clipboard');
-                setTimeout(() => {
-                    copyBtn.textContent = original;
-                    copyBtn.classList.remove('btn-success');
-                    copyBtn.classList.add('btn-outline-secondary');
-                }, 1200);
-            } catch (err) {
-                console.error('Unable to copy', err);
-                toast('error', 'Unable to copy password');
-            }
-        });
+                try {
+                    if (navigator.clipboard?.writeText) {
+                        await navigator.clipboard.writeText(passwordInput.value);
+                    } else {
+                        passwordInput.type = 'text';
+                        passwordInput.select();
+                        passwordInput.setSelectionRange(0, passwordInput.value.length);
+                        document.execCommand('copy');
+                        passwordInput.type = 'password';
+                    }
+                    copyBtn.textContent = copyBtn.dataset.labelDone || 'Copied!';
+                    toast('success', 'Password copied');
+                } catch (error) {
+                    console.error('Copy failed', error);
+                    toast('error', 'Unable to copy password');
+                } finally {
+                    setTimeout(() => {
+                        copyBtn.textContent = original;
+                    }, 1200);
+                }
+            });
+        })();
     </script>
 }

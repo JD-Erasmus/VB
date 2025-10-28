@@ -1,10 +1,5 @@
-﻿@using System.Text.Json
-@{
+﻿@{
     var title = ViewData["Title"] as string ?? "VB";
-    var statusMessage = TempData["StatusMessage"] as string;
-    var statusType = TempData["StatusType"] as string ?? "success"; // success, error, warning, info, question
-    var msgJson = JsonSerializer.Serialize(statusMessage);
-    var typeJson = JsonSerializer.Serialize(statusType);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -22,7 +17,7 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
             <div class="container-fluid">
                 <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Vaults" asp-action="Index">
-                    <span class="me-2">🔐</span> VB
+                    <span class="me-2">??</span> VB
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -63,28 +58,10 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await Html.PartialAsync("_ValidationScriptsPartial")
-
-    @if (!string.IsNullOrWhiteSpace(statusMessage))
-    {
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                if (window.Swal) {
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1800,
-                        timerProgressBar: true
-                    });
-                    Toast.fire({ icon: @typeJson, title: @msgJson });
-                }
-            });
-        </script>
-    }
-
+    <partial name="_Swal" />
     @RenderSection("Scripts", required: false)
 </body>
 </html>

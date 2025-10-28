@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using VB.Data;
-using VB.Models;
-using VB.Helpers;
 using System.Linq;
+using Infrastructure.Alerts;
+using VB.Data;
+using VB.Helpers;
+using VB.Models;
 using VB.Services;
 
 namespace VB.Controllers
@@ -17,28 +19,46 @@ namespace VB.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IEncryptionHelper _encryptionHelper;
         private readonly PasswordService _passwordService;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public VaultsController(ApplicationDbContext context, IEncryptionHelper encryptionHelper, PasswordService passwordService)
+        public VaultsController(ApplicationDbContext context, IEncryptionHelper encryptionHelper, PasswordService passwordService, UserManager<IdentityUser> userManager)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _encryptionHelper = encryptionHelper ?? throw new ArgumentNullException(nameof(encryptionHelper));
-            _passwordService = passwordService;
+            _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         }
 
         // GET: Vaults
         public async Task<IActionResult> Index()
         {
-            var vaults = await _context.Vault.ToListAsync();
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var vaults = await _context.Vault
+                .Where(v => v.UserId == userId)
+                .ToListAsync();
             return View(vaults);
         }
 
         // GET: Vaults/Details/5
         public async Task<IActionResult> Details(int id)
         {
-            var vault = await _context.Vault.FindAsync(id);
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var vault = await _context.Vault
+                .FirstOrDefaultAsync(v => v.Id == id && v.UserId == userId);
             if (vault == null)
             {
-                return NotFound();
+                this.SwalError("Vault not found.");
+                return RedirectToAction(nameof(Index));
             }
 
             vault.Password = _encryptionHelper.DecryptString(vault.Password);
@@ -62,25 +82,43 @@ namespace VB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Username,Password,Email,Url,WebsiteName")] Vault vault)
         {
-            if (ModelState.IsValid)
+            var userId = GetCurrentUserId();
+            if (userId == null)
             {
-                vault.Password = _encryptionHelper.EncryptString(vault.Password);
-                _context.Add(vault);
-                await _context.SaveChangesAsync();
-                TempData["StatusMessage"] = "Vault created successfully.";
-                TempData["StatusType"] = "success";
-                return RedirectToAction(nameof(Index));
+                return Challenge();
             }
-            return View(vault);
+
+            vault.UserId = userId;
+            ModelState.Remove(nameof(Vault.UserId));
+
+            if (!ModelState.IsValid)
+            {
+                this.SwalWarning("Fix validation errors");
+                return View(vault);
+            }
+
+            vault.Password = _encryptionHelper.EncryptString(vault.Password);
+            _context.Add(vault);
+            await _context.SaveChangesAsync();
+            this.SwalSuccess("Vault created successfully.");
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Vaults/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var vault = await _context.Vault.FindAsync(id);
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var vault = await _context.Vault
+                .FirstOrDefaultAsync(v => v.Id == id && v.UserId == userId);
             if (vault == null)
             {
-                return NotFound();
+                this.SwalError("Vault not found.");
+                return RedirectToAction(nameof(Index));
             }
 
             vault.Password = _encryptionHelper.DecryptString(vault.Password);
@@ -94,42 +132,73 @@ namespace VB.Controllers
         {
             if (id != vault.Id)
             {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    vault.Password = _encryptionHelper.EncryptString(vault.Password);
-                    _context.Update(vault);
-                    await _context.SaveChangesAsync();
-                    TempData["StatusMessage"] = "Vault updated successfully.";
-                    TempData["StatusType"] = "success";
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!VaultExists(vault.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                this.SwalError("Vault not found.");
                 return RedirectToAction(nameof(Index));
             }
-            return View(vault);
+
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var existingVault = await _context.Vault
+                .FirstOrDefaultAsync(v => v.Id == id && v.UserId == userId);
+            if (existingVault == null)
+            {
+                this.SwalError("Vault not found.");
+                return RedirectToAction(nameof(Index));
+            }
+
+            ModelState.Remove(nameof(Vault.UserId));
+
+            if (!ModelState.IsValid)
+            {
+                this.SwalWarning("Fix validation errors");
+                return View(vault);
+            }
+
+            try
+            {
+                existingVault.Username = vault.Username;
+                existingVault.Password = _encryptionHelper.EncryptString(vault.Password);
+                existingVault.Email = vault.Email;
+                existingVault.Url = vault.Url;
+                existingVault.WebsiteName = vault.WebsiteName;
+
+                await _context.SaveChangesAsync();
+                this.SwalSuccess("Vault updated successfully.");
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!VaultExists(vault.Id, userId))
+                {
+                    this.SwalError("Vault not found.");
+                    return RedirectToAction(nameof(Index));
+                }
+
+                this.SwalError("Unable to update vault. Please try again.");
+                return RedirectToAction(nameof(Index));
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Vaults/Delete/5
         public async Task<IActionResult> Delete(int id)
         {
-            var vault = await _context.Vault.FindAsync(id);
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var vault = await _context.Vault
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.Id == id && v.UserId == userId);
             if (vault == null)
             {
-                return NotFound();
+                this.SwalError("Vault not found.");
+                return RedirectToAction(nameof(Index));
             }
 
             return View(vault);
@@ -140,22 +209,34 @@ namespace VB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var vault = await _context.Vault.FindAsync(id);
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var vault = await _context.Vault
+                .FirstOrDefaultAsync(v => v.Id == id && v.UserId == userId);
             if (vault == null)
             {
-                return NotFound();
+                this.SwalError("Vault not found.");
+                return RedirectToAction(nameof(Index));
             }
 
             _context.Vault.Remove(vault);
             await _context.SaveChangesAsync();
-            TempData["StatusMessage"] = "Vault deleted successfully.";
-            TempData["StatusType"] = "success";
+            this.SwalSuccess("Vault deleted successfully.");
             return RedirectToAction(nameof(Index));
         }
 
-        private bool VaultExists(int id)
+        private bool VaultExists(int id, string userId)
         {
-            return _context.Vault.Any(e => e.Id == id);
+            return _context.Vault.Any(e => e.Id == id && e.UserId == userId);
+        }
+
+        private string? GetCurrentUserId()
+        {
+            return _userManager.GetUserId(User);
         }
     }
 }

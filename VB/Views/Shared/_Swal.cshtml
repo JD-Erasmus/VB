@@ -1,0 +1,21 @@
+@{
+    const string key = "SWAL";
+    var json = TempData[key] as string;
+}
+
+@if (!string.IsNullOrWhiteSpace(json))
+{
+    <script>
+        (() => {
+            try {
+                if (!window.Swal) {
+                    return;
+                }
+                const cfg = JSON.parse(@Html.Raw(Json.Serialize(json)));
+                Swal.fire(cfg);
+            } catch (e) {
+                console.error("SweetAlert config error:", e);
+            }
+        })();
+    </script>
+}
