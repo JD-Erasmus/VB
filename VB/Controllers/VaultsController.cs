@@ -67,6 +67,8 @@ namespace VB.Controllers
                 vault.Password = _encryptionHelper.EncryptString(vault.Password);
                 _context.Add(vault);
                 await _context.SaveChangesAsync();
+                TempData["StatusMessage"] = "Vault created successfully.";
+                TempData["StatusType"] = "success";
                 return RedirectToAction(nameof(Index));
             }
             return View(vault);
@@ -102,6 +104,8 @@ namespace VB.Controllers
                     vault.Password = _encryptionHelper.EncryptString(vault.Password);
                     _context.Update(vault);
                     await _context.SaveChangesAsync();
+                    TempData["StatusMessage"] = "Vault updated successfully.";
+                    TempData["StatusType"] = "success";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -144,6 +148,8 @@ namespace VB.Controllers
 
             _context.Vault.Remove(vault);
             await _context.SaveChangesAsync();
+            TempData["StatusMessage"] = "Vault deleted successfully.";
+            TempData["StatusType"] = "success";
             return RedirectToAction(nameof(Index));
         }
 

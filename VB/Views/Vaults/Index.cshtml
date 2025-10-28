@@ -1,59 +1,123 @@
 ﻿@model IEnumerable<VB.Models.Vault>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Vaults";
 }
 
-<h1>Index</h1>
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+    <h1 class="h3 m-0">@ViewData["Title"]</h1>
+    <div class="d-flex gap-2 align-items-center">
+        <div class="input-group">
+            <span class="input-group-text" id="search-addon">Search</span>
+            <input type="text" id="vaultSearch" class="form-control" placeholder="Filter by website, username, or email" aria-describedby="search-addon" />
+        </div>
+        <a asp-action="Create" class="btn btn-primary">Create New</a>
+    </div>
+</div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Username)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Password)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Url)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.WebsiteName)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Username)
-            </td>
-            <td>
-                <p>********</p>
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Url)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.WebsiteName)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="vaultsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.First().Username)</th>
+                        <th>@Html.DisplayNameFor(model => model.First().Password)</th>
+                        <th>@Html.DisplayNameFor(model => model.First().Email)</th>
+                        <th>@Html.DisplayNameFor(model => model.First().Url)</th>
+                        <th>@Html.DisplayNameFor(model => model.First().WebsiteName)</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="username">@Html.DisplayFor(modelItem => item.Username)</td>
+                            <td>
+                                <span aria-hidden="true">••••••••</span>
+                                <span class="visually-hidden">Password hidden</span>
+                            </td>
+                            <td class="email">@Html.DisplayFor(modelItem => item.Email)</td>
+                            <td class="url">
+                                @if (!string.IsNullOrWhiteSpace(item.Url))
+                                {
+                                    <a href="@item.Url" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                                        @item.Url
+                                    </a>
+                                }
+                            </td>
+                            <td class="site">@Html.DisplayFor(modelItem => item.WebsiteName)</td>
+                            <td class="text-end">
+                                <div class="btn-group" role="group" aria-label="Actions">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" data-delete data-name="@item.WebsiteName">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No vault entries found.</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('vaultSearch');
+            const table = document.getElementById('vaultsTable');
+            const rows = () => Array.from(table.querySelectorAll('tbody tr'));
+            const normalize = (s) => (s || '').toString().toLowerCase();
+
+            input?.addEventListener('input', function () {
+                const q = normalize(this.value);
+                rows().forEach(tr => {
+                    const username = normalize(tr.querySelector('.username')?.textContent);
+                    const email = normalize(tr.querySelector('.email')?.textContent);
+                    const url = normalize(tr.querySelector('.url')?.textContent);
+                    const site = normalize(tr.querySelector('.site')?.textContent);
+                    const match = username.includes(q) || email.includes(q) || url.includes(q) || site.includes(q);
+                    tr.style.display = match ? '' : 'none';
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                const link = e.target.closest('a[data-delete]');
+                if (!link) return;
+                e.preventDefault();
+                const name = link.getAttribute('data-name') || 'this entry';
+                if (!window.Swal) return; // Ensure SweetAlert2 is loaded
+                Swal.fire({
+                    title: 'Delete?',
+                    text: `Are you sure you want to delete ${name}?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Delete',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#dc3545'
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        const form = document.getElementById('deleteForm');
+                        form.action = link.getAttribute('href');
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
 }
-    </tbody>
-</table>

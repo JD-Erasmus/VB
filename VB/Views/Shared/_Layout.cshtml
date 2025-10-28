@@ -1,47 +1,90 @@
-﻿<!DOCTYPE html>
+﻿@using System.Text.Json
+@{
+    var title = ViewData["Title"] as string ?? "VB";
+    var statusMessage = TempData["StatusMessage"] as string;
+    var statusType = TempData["StatusType"] as string ?? "success"; // success, error, warning, info, question
+    var msgJson = JsonSerializer.Serialize(statusMessage);
+    var typeJson = JsonSerializer.Serialize(statusType);
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - VB</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title - VB</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/VB.styles.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
+    <header class="shadow-sm">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">VB</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Vaults" asp-action="Index">
+                    <span class="me-2">🔐</span> VB
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="collapse navbar-collapse" id="mainNavbar">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Vaults" asp-action="Index">Vault</a>
+                            <a class="nav-link" asp-controller="Vaults" asp-action="Index">Vaults</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
-                    <partial name="_LoginPartial" />
+                    <div class="d-flex align-items-center">
+                        @await Html.PartialAsync("_LoginPartial")
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
+    <main role="main" class="flex-grow-1 py-4">
         <div class="container">
-            @* &copy; 2024 - VB - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a> *@
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="mt-auto border-top bg-white">
+        <div class="container py-3 text-muted small d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <div>
+                <span class="fw-semibold">VB</span> &mdash; Secure Vaults
+            </div>
+            <div>
+                &copy; @DateTime.UtcNow.Year &middot; All rights reserved
+            </div>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
+    @if (!string.IsNullOrWhiteSpace(statusMessage))
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.Swal) {
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 1800,
+                        timerProgressBar: true
+                    });
+                    Toast.fire({ icon: @typeJson, title: @msgJson });
+                }
+            });
+        </script>
+    }
+
+    @RenderSection("Scripts", required: false)
 </body>
 </html>
