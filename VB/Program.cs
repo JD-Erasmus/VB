@@ -26,6 +26,7 @@ builder.Services.AddControllersWithViews();
 // Register IEncryptionHelper
 builder.Services.AddSingleton<IEncryptionHelper, EncryptionHelper>();
 builder.Services.AddTransient<PasswordService>();
+builder.Services.AddTransient<IVaultShareService, VaultShareService>();
 
 var app = builder.Build();
 

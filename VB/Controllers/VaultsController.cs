@@ -10,6 +10,7 @@ using VB.Data;
 using VB.Helpers;
 using VB.Models;
 using VB.Services;
+using VB.Models.ViewModels;
 
 namespace VB.Controllers
 {
@@ -20,13 +21,15 @@ namespace VB.Controllers
         private readonly IEncryptionHelper _encryptionHelper;
         private readonly PasswordService _passwordService;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IVaultShareService _vaultShareService;
 
-        public VaultsController(ApplicationDbContext context, IEncryptionHelper encryptionHelper, PasswordService passwordService, UserManager<IdentityUser> userManager)
+        public VaultsController(ApplicationDbContext context, IEncryptionHelper encryptionHelper, PasswordService passwordService, UserManager<IdentityUser> userManager, IVaultShareService vaultShareService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _encryptionHelper = encryptionHelper ?? throw new ArgumentNullException(nameof(encryptionHelper));
             _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _vaultShareService = vaultShareService ?? throw new ArgumentNullException(nameof(vaultShareService));
         }
 
         // GET: Vaults
@@ -227,6 +230,71 @@ namespace VB.Controllers
             await _context.SaveChangesAsync();
             this.SwalSuccess("Vault deleted successfully.");
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateShare([FromBody] CreateVaultShareRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            if (request is null)
+            {
+                return BadRequest(new { message = "Invalid request payload." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { message = "Please review the form fields.", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+            }
+
+            var vault = await _context.Vault
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.Id == request.VaultId && v.UserId == userId);
+
+            if (vault == null)
+            {
+                return NotFound(new { message = "Vault not found." });
+            }
+
+            var (share, rawToken) = await _vaultShareService.CreateShareAsync(vault, request);
+            var link = Url.Action("Show", "SharedPasswords", new { token = rawToken }, Request.Scheme) ?? string.Empty;
+
+            return Ok(new
+            {
+                link,
+                shareId = share.Id,
+                expiresAt = share.ExpiresAt,
+                maxViews = share.MaxViews
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RevokeShare([FromBody] int shareId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            if (shareId <= 0)
+            {
+                return BadRequest(new { message = "Invalid share identifier." });
+            }
+
+            var revoked = await _vaultShareService.RevokeAsync(shareId, userId);
+            if (!revoked)
+            {
+                return NotFound(new { message = "Share not found." });
+            }
+
+            return Ok(new { success = true });
         }
 
         private bool VaultExists(int id, string userId)

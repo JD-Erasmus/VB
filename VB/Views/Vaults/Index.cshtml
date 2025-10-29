@@ -52,6 +52,13 @@
                             <td class="site">@Html.DisplayFor(modelItem => item.WebsiteName)</td>
                             <td class="text-end">
                                 <div class="btn-group" role="group" aria-label="Actions">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-success"
+                                            data-share
+                                            data-vault-id="@item.Id"
+                                            data-website="@item.WebsiteName">
+                                        Share
+                                    </button>
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
                                     <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" data-delete data-name="@item.WebsiteName">Delete</a>
@@ -76,6 +83,72 @@
     @Html.AntiForgeryToken()
 </form>
 
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">Share vault entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="shareForm" action="@Url.Action("CreateShare", "Vaults")" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="shareVaultId" />
+                    <div class="mb-3">
+                        <label class="form-label">Entry</label>
+                        <div class="form-control-plaintext fw-semibold" id="shareVaultName">-</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shareRecipientNote" class="form-label">Recipient note (optional)</label>
+                        <input type="text"
+                               class="form-control"
+                               id="shareRecipientNote"
+                               maxlength="200"
+                               placeholder="e.g. For accounting login" />
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="shareExpiry" class="form-label">Expires in</label>
+                            <select class="form-select" id="shareExpiry">
+                                <option value="15">15 minutes</option>
+                                <option value="60" selected>1 hour</option>
+                                <option value="720">12 hours</option>
+                                <option value="1440">1 day</option>
+                                <option value="10080">7 days</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="shareMaxViews" class="form-label">View limit</label>
+                            <select class="form-select" id="shareMaxViews">
+                                <option value="1" selected>View once</option>
+                                <option value="2">Up to 2 times</option>
+                                <option value="5">Up to 5 times</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3" role="alert">
+                        We'll copy the secure link to your clipboard right after it's created.
+                    </div>
+                    <div id="shareResultCard" class="card border-success d-none mt-3">
+                        <div class="card-body">
+                            <p class="card-text mb-2">Link ready! Share it however you prefer.</p>
+                            <div class="input-group">
+                                <input type="text" readonly class="form-control" id="shareResultLink" />
+                                <button class="btn btn-outline-success" type="button" id="shareCopyBtn">Copy</button>
+                            </div>
+                            <small class="text-muted d-block mt-2" id="shareResultMeta"></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success" id="shareSubmitBtn">Create link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -83,6 +156,20 @@
             const table = document.getElementById('vaultsTable');
             const rows = () => Array.from(table.querySelectorAll('tbody tr'));
             const normalize = (s) => (s || '').toString().toLowerCase();
+            const shareModalElement = document.getElementById('shareModal');
+            const shareForm = document.getElementById('shareForm');
+            const shareVaultName = document.getElementById('shareVaultName');
+            const shareVaultId = document.getElementById('shareVaultId');
+            const shareRecipientNote = document.getElementById('shareRecipientNote');
+            const shareExpiry = document.getElementById('shareExpiry');
+            const shareMaxViews = document.getElementById('shareMaxViews');
+            const shareResultCard = document.getElementById('shareResultCard');
+            const shareResultLink = document.getElementById('shareResultLink');
+            const shareCopyBtn = document.getElementById('shareCopyBtn');
+            const shareResultMeta = document.getElementById('shareResultMeta');
+            const shareSubmitBtn = document.getElementById('shareSubmitBtn');
+            const shareModal = shareModalElement && window.bootstrap ? new bootstrap.Modal(shareModalElement) : null;
+            const antiForgeryToken = shareForm?.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
             input?.addEventListener('input', function () {
                 const q = normalize(this.value);
@@ -97,6 +184,24 @@
             });
 
             document.addEventListener('click', function (e) {
+                const shareBtn = e.target.closest('[data-share]');
+                if (shareBtn && shareModal && shareVaultId && shareVaultName) {
+                    e.preventDefault();
+                    shareVaultId.value = shareBtn.getAttribute('data-vault-id') ?? '';
+                    shareVaultName.textContent = shareBtn.getAttribute('data-website') || 'this entry';
+                    if (shareRecipientNote) shareRecipientNote.value = '';
+                    if (shareExpiry) shareExpiry.value = '60';
+                    if (shareMaxViews) shareMaxViews.value = '1';
+                    if (shareResultCard) shareResultCard.classList.add('d-none');
+                    if (shareResultLink) shareResultLink.value = '';
+                    if (shareResultMeta) shareResultMeta.textContent = '';
+                    shareSubmitBtn?.removeAttribute('disabled');
+                    shareSubmitBtn?.classList.remove('disabled');
+                    shareSubmitBtn && (shareSubmitBtn.textContent = 'Create link');
+                    shareModal.show();
+                    return;
+                }
+
                 const link = e.target.closest('a[data-delete]');
                 if (!link) return;
                 e.preventDefault();
@@ -117,6 +222,115 @@
                         form.submit();
                     }
                 });
+            });
+
+            shareForm?.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                if (!shareModal || !shareVaultId) {
+                    return;
+                }
+
+                const vaultId = Number.parseInt(shareVaultId.value || '0', 10);
+                if (!vaultId) {
+                    Swal?.fire?.('Share failed', 'Missing vault identifier.', 'error');
+                    return;
+                }
+
+                const payload = {
+                    vaultId,
+                    recipientNote: shareRecipientNote?.value?.trim() || null,
+                    expiresInMinutes: Number.parseInt(shareExpiry?.value || '60', 10),
+                    maxViews: Number.parseInt(shareMaxViews?.value || '1', 10)
+                };
+
+                const originalText = shareSubmitBtn?.textContent;
+
+                if (!antiForgeryToken) {
+                    Swal?.fire?.('Share failed', 'Security token missing. Refresh and try again.', 'error');
+                    return;
+                }
+
+                shareSubmitBtn?.setAttribute('disabled', 'disabled');
+                shareSubmitBtn?.classList.add('disabled');
+                if (shareSubmitBtn) shareSubmitBtn.textContent = 'Creating...';
+
+                try {
+                    const response = await fetch(shareForm.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                        const message = data?.message || 'Unable to create share link.';
+                        Swal?.fire?.('Share failed', message, 'error');
+                        return;
+                    }
+
+                    if (shareResultLink && typeof data.link === 'string') {
+                        shareResultLink.value = data.link;
+                    }
+
+                    if (shareResultMeta) {
+                        const expiryText = data.expiresAt
+                            ? `Expires: ${new Date(data.expiresAt).toLocaleString()}`
+                            : 'No expiry';
+                        shareResultMeta.textContent = `${expiryText} - Max views: ${data.maxViews ?? 1}`;
+                    }
+
+                    shareResultCard?.classList.remove('d-none');
+
+                    let clipboardSuccess = false;
+                    if (navigator.clipboard && shareResultLink?.value) {
+                        try {
+                            await navigator.clipboard.writeText(shareResultLink.value);
+                            clipboardSuccess = true;
+                        }
+                        catch {
+                            clipboardSuccess = false;
+                        }
+                    }
+
+                    const title = clipboardSuccess ? 'Link copied' : 'Link ready';
+                    const text = clipboardSuccess
+                        ? 'We copied the secure link to your clipboard.'
+                        : 'Copy the secure link below.';
+                    Swal?.fire?.({
+                        title,
+                        text,
+                        icon: 'success'
+                    });
+                }
+                catch (error) {
+                    console.error('Share creation failed', error);
+                    Swal?.fire?.('Share failed', 'An unexpected error occurred. Please retry.', 'error');
+                }
+                finally {
+                    shareSubmitBtn?.removeAttribute('disabled');
+                    shareSubmitBtn?.classList.remove('disabled');
+                    if (shareSubmitBtn && originalText) {
+                        shareSubmitBtn.textContent = originalText;
+                    }
+                }
+            });
+
+            shareCopyBtn?.addEventListener('click', async () => {
+                if (!shareResultLink?.value) {
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(shareResultLink.value);
+                    Swal?.fire?.('Copied', 'Secure link copied to clipboard.', 'success');
+                }
+                catch {
+                    Swal?.fire?.('Copy failed', 'Please copy the link manually.', 'warning');
+                }
             });
         });
     </script>

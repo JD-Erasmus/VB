@@ -1,0 +1,110 @@
+@model VB.Models.ViewModels.SharedVaultViewModel
+
+@{
+    ViewData["Title"] = Model?.Title ?? "Secure share";
+    var expiresAt = Model?.ExpiresAt;
+    var remainingViews = Model?.RemainingViews ?? 0;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h1 class="h4 mb-3">@ViewData["Title"]</h1>
+                    @if (Model?.Success == true)
+                    {
+                        <p class="text-muted">@Model.Message</p>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.RecipientNote))
+                        {
+                            <div class="alert alert-info" role="alert">
+                                <strong>Note:</strong> @Model.RecipientNote
+                            </div>
+                        }
+
+                        <div class="alert alert-warning" role="alert">
+                            <div class="small mb-1">Protect these details. The owner can revoke this link at any time.</div>
+                            <div class="small mb-0">
+                                @(expiresAt.HasValue ? $"Expires: {expiresAt.Value.LocalDateTime:G}" : "No expiry set") - Remaining views: @(remainingViews > 0 ? remainingViews : 0)
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Website</label>
+                            <input type="text" class="form-control" value="@Model.WebsiteName" readonly id="shared-site" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="@Model.Username" readonly id="shared-username" />
+                                <button class="btn btn-outline-secondary" type="button" data-copy="#shared-username">Copy</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="@Model.Password" readonly id="shared-password" />
+                                <button class="btn btn-outline-secondary" type="button" data-copy="#shared-password">Copy</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="@Model.Email" readonly id="shared-email" />
+                                <button class="btn btn-outline-secondary" type="button" data-copy="#shared-email">Copy</button>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Url))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">URL</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" value="@Model.Url" readonly id="shared-url" />
+                                    <button class="btn btn-outline-secondary" type="button" data-copy="#shared-url">Copy</button>
+                                    <a class="btn btn-outline-primary" href="@Model.Url" target="_blank" rel="noopener noreferrer">Open</a>
+                                </div>
+                            </div>
+                        }
+                        <div class="alert alert-light border" role="alert">
+                            <strong>Tip:</strong> When you're done, close this tab so nobody else can view it.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            @Model?.Message ?? "We couldn't load this secure link. It may have expired or been revoked."
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('click', async function (event) {
+            const button = event.target.closest('[data-copy]');
+            if (!button) {
+                return;
+            }
+
+            const selector = button.getAttribute('data-copy');
+            const field = selector ? document.querySelector(selector) : null;
+            if (!(field instanceof HTMLInputElement)) {
+                return;
+            }
+
+            try {
+                if (!navigator.clipboard) {
+                    throw new Error('Clipboard API unavailable');
+                }
+                await navigator.clipboard.writeText(field.value ?? '');
+                Swal?.fire?.('Copied', 'Value copied to clipboard.', 'success');
+            } catch {
+                Swal?.fire?.('Copy failed', 'Please copy the field manually.', 'warning');
+            }
+        });
+    </script>
+}
