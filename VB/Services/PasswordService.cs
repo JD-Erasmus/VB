@@ -26,23 +26,28 @@ namespace VB.Services
                 throw new ArgumentException("At least one character set must be included.");
 
             var password = new char[length];
-            var random = new Random();
 
             // Ensure at least one character from each included set
             int position = 0;
-            if (includeLowercase) password[position++] = LowercaseChars[random.Next(LowercaseChars.Length)];
-            if (includeUppercase) password[position++] = UppercaseChars[random.Next(UppercaseChars.Length)];
-            if (includeNumeric) password[position++] = NumericChars[random.Next(NumericChars.Length)];
-            if (includeSpecial) password[position++] = SpecialChars[random.Next(SpecialChars.Length)];
+            if (includeLowercase) password[position++] = LowercaseChars[RandomNumberGenerator.GetInt32(LowercaseChars.Length)];
+            if (includeUppercase) password[position++] = UppercaseChars[RandomNumberGenerator.GetInt32(UppercaseChars.Length)];
+            if (includeNumeric) password[position++] = NumericChars[RandomNumberGenerator.GetInt32(NumericChars.Length)];
+            if (includeSpecial) password[position++] = SpecialChars[RandomNumberGenerator.GetInt32(SpecialChars.Length)];
 
             // Fill the rest of the password
             for (int i = position; i < length; i++)
             {
-                password[i] = charSet[random.Next(charSet.Length)];
+                password[i] = charSet[RandomNumberGenerator.GetInt32(charSet.Length)];
             }
 
-            // Shuffle the password
-            return new string(password.OrderBy(x => random.Next()).ToArray());
+            // Shuffle the password using Fisher–Yates driven by cryptographic RNG
+            for (int i = password.Length - 1; i > 0; i--)
+            {
+                int swapIndex = RandomNumberGenerator.GetInt32(i + 1);
+                (password[i], password[swapIndex]) = (password[swapIndex], password[i]);
+            }
+
+            return new string(password);
         }
 
         public bool ValidatePasswordStrength(string password, int requiredLength = 12, bool requireLowercase = true, bool requireUppercase = true, bool requireNumeric = true, bool requireSpecial = true)
