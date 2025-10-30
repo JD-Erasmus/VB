@@ -46,21 +46,21 @@
                     <label class="form-label">Username</label>
                     <div class="input-group">
                         <input type="text" class="form-control" value="@Model?.Username" readonly id="shared-username" />
-                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-username">Copy</button>
+                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-username" data-copy-failure="Please copy the field manually.">Copy</button>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Password</label>
                     <div class="input-group">
                         <input type="text" class="form-control" value="@Model?.Password" readonly id="shared-password" />
-                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-password">Copy</button>
+                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-password" data-copy-failure="Please copy the field manually.">Copy</button>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Email</label>
                     <div class="input-group">
                         <input type="text" class="form-control" value="@Model?.Email" readonly id="shared-email" />
-                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-email">Copy</button>
+                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-email" data-copy-failure="Please copy the field manually.">Copy</button>
                     </div>
                 </div>
                 @if (!string.IsNullOrWhiteSpace(Model?.Url))
@@ -69,7 +69,7 @@
                         <label class="form-label">URL</label>
                         <div class="input-group">
                             <input type="text" class="form-control" value="@Model.Url" readonly id="shared-url" />
-                            <button class="btn btn-outline-secondary" type="button" data-copy="#shared-url">Copy</button>
+                            <button class="btn btn-outline-secondary" type="button" data-copy="#shared-url" data-copy-failure="Please copy the field manually.">Copy</button>
                             <a class="btn btn-outline-primary" href="@Model.Url" target="_blank" rel="noopener noreferrer">Open</a>
                         </div>
                     </div>
@@ -88,30 +88,3 @@
         }
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        document.addEventListener('click', async function (event) {
-            const button = event.target.closest('[data-copy]');
-            if (!button) {
-                return;
-            }
-
-            const selector = button.getAttribute('data-copy');
-            const field = selector ? document.querySelector(selector) : null;
-            if (!(field instanceof HTMLInputElement)) {
-                return;
-            }
-
-            try {
-                if (!navigator.clipboard) {
-                    throw new Error('Clipboard API unavailable');
-                }
-                await navigator.clipboard.writeText(field.value ?? '');
-                Swal?.fire?.('Copied', 'Value copied to clipboard.', 'success');
-            } catch {
-                Swal?.fire?.('Copy failed', 'Please copy the field manually.', 'warning');
-            }
-        });
-    </script>
-}

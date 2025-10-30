@@ -44,7 +44,7 @@
     }
 }
 
-<div class="vault-page">
+<div class="vault-page" data-vault-list data-default-view="board">
     <div class="vault-header">
         <div>
             <div class="vault-header-eyebrow">Passwords</div>
@@ -57,7 +57,8 @@
                 <input type="text"
                        id="vaultSearch"
                        class="form-control"
-                       placeholder="Search websites, usernames, emails" />
+                       placeholder="Search websites, usernames, emails"
+                       data-vault-search />
             </div>
         </div>
     </div>
@@ -130,8 +131,14 @@
                                         <a asp-action="Delete"
                                            asp-route-id="@vault.Id"
                                            class="btn btn-sm btn-outline-danger"
-                                           data-delete
-                                           data-name="@vault.WebsiteName">
+                                           data-confirm
+                                           data-confirm-title="Delete vault?"
+                                           data-confirm-text="This will remove @vault.WebsiteName from your vault."
+                                           data-confirm-icon="warning"
+                                           data-confirm-confirm-text="Delete"
+                                           data-confirm-cancel-text="Cancel"
+                                           data-confirm-confirm-color="#dc3545"
+                                           data-confirm-submit="#deleteForm">
                                             <i class="bi bi-trash me-1"></i>
                                             Delete
                                         </a>
@@ -162,7 +169,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="vaultsTable">
+                        <table class="table table-hover align-middle mb-0" id="vaultsTable" data-vault-table>
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col">Website</th>
@@ -208,8 +215,14 @@
                                                     <a asp-action="Delete"
                                                        asp-route-id="@item.Id"
                                                        class="btn btn-outline-danger"
-                                                       data-delete
-                                                       data-name="@item.WebsiteName">
+                                                       data-confirm
+                                                       data-confirm-title="Delete vault?"
+                                                       data-confirm-text="This will remove @item.WebsiteName from your vault."
+                                                       data-confirm-icon="warning"
+                                                       data-confirm-confirm-text="Delete"
+                                                       data-confirm-cancel-text="Cancel"
+                                                       data-confirm-confirm-color="#dc3545"
+                                                       data-confirm-submit="#deleteForm">
                                                         <i class="bi bi-trash"></i>
                                                     </a>
                                                 </div>
@@ -283,7 +296,13 @@
                             <p class="card-text mb-2">Link ready! Share it however you prefer.</p>
                             <div class="input-group">
                                 <input type="text" readonly class="form-control" id="shareResultLink" />
-                                <button class="btn btn-outline-success" type="button" id="shareCopyBtn">Copy</button>
+                                <button class="btn btn-outline-success"
+                                        type="button"
+                                        data-copy="#shareResultLink"
+                                        data-copy-title="Copied"
+                                        data-copy-success="Secure link copied to clipboard."
+                                        data-copy-fail-title="Copy failed"
+                                        data-copy-failure="Please copy the link manually.">Copy</button>
                             </div>
                             <small class="text-muted d-block mt-2" id="shareResultMeta"></small>
                         </div>
@@ -298,13 +317,9 @@
     </div>
 </div>
 @section Scripts {
+    <script src="~/js/components/vault-list.js" asp-append-version="true"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const searchInput = document.getElementById('vaultSearch');
-            const table = document.getElementById('vaultsTable');
-            const viewButtons = document.querySelectorAll('[data-view-trigger]');
-            const panels = document.querySelectorAll('[data-view-panel]');
-            const deleteForm = document.getElementById('deleteForm');
             const shareModalElement = document.getElementById('shareModal');
             const shareForm = document.getElementById('shareForm');
             const shareVaultName = document.getElementById('shareVaultName');
@@ -314,80 +329,13 @@
             const shareMaxViews = document.getElementById('shareMaxViews');
             const shareResultCard = document.getElementById('shareResultCard');
             const shareResultLink = document.getElementById('shareResultLink');
-            const shareCopyBtn = document.getElementById('shareCopyBtn');
             const shareResultMeta = document.getElementById('shareResultMeta');
             const shareSubmitBtn = document.getElementById('shareSubmitBtn');
             const shareModal = shareModalElement && window.bootstrap ? new bootstrap.Modal(shareModalElement) : null;
             const antiForgeryToken = shareForm?.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
-            const normalize = (value) => (value || '').toString().toLowerCase();
-            const tableRows = () => table ? Array.from(table.querySelectorAll('tbody tr')) : [];
-            const boardCards = () => Array.from(document.querySelectorAll('[data-board-card]'));
-
-            function setActiveView(target) {
-                if (!target) {
-                    return;
-                }
-
-                viewButtons.forEach(btn => {
-                    const isMatch = btn.getAttribute('data-view-trigger') === target;
-                    btn.classList.toggle('active', isMatch);
-                    btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
-                });
-
-                panels.forEach(panel => {
-                    const isMatch = panel.getAttribute('data-view-panel') === target;
-                    panel.classList.toggle('is-active', isMatch);
-                    panel.classList.toggle('d-none', !isMatch);
-                });
-            }
-
-            function applyFilter(query) {
-                const q = normalize(query);
-
-                tableRows().forEach(row => {
-                    const haystack = normalize(row.getAttribute('data-search') || row.textContent);
-                    row.style.display = haystack.includes(q) ? '' : 'none';
-                });
-
-                boardCards().forEach(card => {
-                    const haystack = normalize(card.getAttribute('data-search') || card.textContent);
-                    card.classList.toggle('d-none', !haystack.includes(q));
-                });
-            }
-
-            viewButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    setActiveView(btn.getAttribute('data-view-trigger'));
-                });
-            });
-
-            searchInput?.addEventListener('input', function () {
-                applyFilter(this.value);
-            });
-
             document.addEventListener('click', function (event) {
-                const deleteLink = event.target.closest('[data-delete]');
                 const shareBtn = event.target.closest('[data-share]');
-
-                if (deleteLink) {
-                    event.preventDefault();
-                    const vaultName = deleteLink.getAttribute('data-name') || 'this entry';
-                    Swal?.fire?.({
-                        title: 'Delete vault?',
-                        text: `This will remove ${vaultName} from your vault.`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Delete',
-                        cancelButtonText: 'Cancel',
-                        confirmButtonColor: '#dc3545'
-                    }).then(result => {
-                        if (result.isConfirmed && deleteForm) {
-                            deleteForm.action = deleteLink.getAttribute('href') ?? '';
-                            deleteForm.submit();
-                        }
-                    });
-                }
 
                 if (shareBtn && shareModal && shareVaultId && shareVaultName) {
                     event.preventDefault();
@@ -500,22 +448,6 @@
                 }
             });
 
-            shareCopyBtn?.addEventListener('click', async () => {
-                if (!shareResultLink?.value) {
-                    return;
-                }
-
-                try {
-                    await navigator.clipboard.writeText(shareResultLink.value);
-                    Swal?.fire?.('Copied', 'Secure link copied to clipboard.', 'success');
-                }
-                catch {
-                    Swal?.fire?.('Copy failed', 'Please copy the link manually.', 'warning');
-                }
-            });
-
-            setActiveView('board');
-            applyFilter(searchInput?.value ?? '');
         });
     </script>
 }
