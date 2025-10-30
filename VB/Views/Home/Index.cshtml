@@ -1,8 +1,58 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Overview";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="app-hero">
+    <div class="app-hero-content">
+        <span class="app-hero-eyebrow">
+            <i class="bi bi-lock-fill"></i>
+            Zero-friction password sharing
+        </span>
+        <h1 class="app-hero-title">Control every shared credential from a single secure command center.</h1>
+        <p class="text-muted mb-4">
+            VaultBridge keeps your teams aligned with live vault views, one-click share links, and automatic expiration controls.
+            No spreadsheets, no email chains—just clean, auditable password workflows.
+        </p>
+        <div class="app-hero-actions">
+            <a asp-controller="Vaults" asp-action="Create" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-circle me-1"></i>
+                Add your first vault
+            </a>
+            <a asp-controller="Vaults" asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-kanban me-1"></i>
+                Browse existing vaults
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="feature-grid">
+    <div class="feature-card">
+        <div class="feature-card-icon">
+            <i class="bi bi-kanban"></i>
+        </div>
+        <h2 class="h5 mb-2">Board + table switching</h2>
+        <p class="text-muted mb-0">Manage dozens of credentials with a kanban overview or jump to the dense table layout for quick edits.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-card-icon">
+            <i class="bi bi-link-45deg"></i>
+        </div>
+        <h2 class="h5 mb-2">Expiring share links</h2>
+        <p class="text-muted mb-0">Generate clipboard-ready share URLs with expiry windows, view caps, and optional recipient notes.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-card-icon">
+            <i class="bi bi-graph-up"></i>
+        </div>
+        <h2 class="h5 mb-2">Live activity optics</h2>
+        <p class="text-muted mb-0">See which credentials were rotated, shared, or audited most recently without leaving the dashboard.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-card-icon">
+            <i class="bi bi-shield-check"></i>
+        </div>
+        <h2 class="h5 mb-2">Security-first defaults</h2>
+        <p class="text-muted mb-0">Every view honors link revocation, remaining view counters, and clipboard-safe copy flows powered by SweetAlert.</p>
+    </div>
 </div>

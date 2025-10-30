@@ -1,28 +1,32 @@
-﻿@using Microsoft.AspNetCore.Identity
+﻿@using System.Linq
+@using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
 
-<ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
-    <li class="nav-item">
-        <a  class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @User.Identity?.Name!</a>
-    </li>
-        <li class="nav-item">
-            <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Register new user</a>
-        </li>
-    <li class="nav-item">
-            <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/Identity/Account/Login" method="post" class="form-inline">
-                <button type="submit" class="nav-link btn btn-link text-dark">Logout</button>
-            </form>
-    </li>
+    var userName = User.Identity?.Name ?? "Account";
+    var initials = string.Join(string.Empty, userName
+        .Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
+        .Select(part => char.ToUpperInvariant(part[0])));
+    <div class="app-user-menu">
+        <span class="app-user-avatar">@initials</span>
+        <div class="app-user-meta">
+            <span class="app-user-name">@userName</span>
+            <div class="app-user-links">
+                <a class="app-user-link" asp-area="Identity" asp-page="/Account/Manage/Index">Manage</a>
+                <a class="app-user-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
+            </div>
+        </div>
+        <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/Identity/Account/Login" method="post">
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Logout</button>
+        </form>
+    </div>
 }
 else
 {
-
-    
-    <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
-    </li>
+    <a class="btn btn-primary" asp-area="Identity" asp-page="/Account/Login">
+        <i class="bi bi-box-arrow-in-right me-1"></i>
+        Login
+    </a>
 }
-</ul>

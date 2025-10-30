@@ -1,84 +1,91 @@
-@model VB.Models.ViewModels.SharedVaultViewModel
+﻿@model VB.Models.ViewModels.SharedVaultViewModel
 
 @{
     ViewData["Title"] = Model?.Title ?? "Secure share";
     var expiresAt = Model?.ExpiresAt;
     var remainingViews = Model?.RemainingViews ?? 0;
+    var success = Model?.Success == true;
 }
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0">
-                <div class="card-body p-4">
-                    <h1 class="h4 mb-3">@ViewData["Title"]</h1>
-                    @if (Model?.Success == true)
-                    {
-                        <p class="text-muted">@Model.Message</p>
+<div class="form-page">
+    <div class="section-heading">
+        <h1 class="section-heading-title">
+            <i class="bi bi-link-45deg me-2"></i>
+            Secure share
+        </h1>
+        @if (success)
+        {
+            <span class="utility-chip">
+                <i class="bi bi-eye"></i>
+                Remaining views: @(remainingViews > 0 ? remainingViews : 0)
+            </span>
+        }
+    </div>
+    <div class="form-card">
+        @if (success)
+        {
+            <p class="text-muted mb-4">@Model?.Message</p>
 
-                        @if (!string.IsNullOrWhiteSpace(Model.RecipientNote))
-                        {
-                            <div class="alert alert-info" role="alert">
-                                <strong>Note:</strong> @Model.RecipientNote
-                            </div>
-                        }
-
-                        <div class="alert alert-warning" role="alert">
-                            <div class="small mb-1">Protect these details. The owner can revoke this link at any time.</div>
-                            <div class="small mb-0">
-                                @(expiresAt.HasValue ? $"Expires: {expiresAt.Value.LocalDateTime:G}" : "No expiry set") - Remaining views: @(remainingViews > 0 ? remainingViews : 0)
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Website</label>
-                            <input type="text" class="form-control" value="@Model.WebsiteName" readonly id="shared-site" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" value="@Model.Username" readonly id="shared-username" />
-                                <button class="btn btn-outline-secondary" type="button" data-copy="#shared-username">Copy</button>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" value="@Model.Password" readonly id="shared-password" />
-                                <button class="btn btn-outline-secondary" type="button" data-copy="#shared-password">Copy</button>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" value="@Model.Email" readonly id="shared-email" />
-                                <button class="btn btn-outline-secondary" type="button" data-copy="#shared-email">Copy</button>
-                            </div>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(Model.Url))
-                        {
-                            <div class="mb-3">
-                                <label class="form-label">URL</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" value="@Model.Url" readonly id="shared-url" />
-                                    <button class="btn btn-outline-secondary" type="button" data-copy="#shared-url">Copy</button>
-                                    <a class="btn btn-outline-primary" href="@Model.Url" target="_blank" rel="noopener noreferrer">Open</a>
-                                </div>
-                            </div>
-                        }
-                        <div class="alert alert-light border" role="alert">
-                            <strong>Tip:</strong> When you're done, close this tab so nobody else can view it.
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-warning" role="alert">
-                            @Model?.Message ?? "We couldn't load this secure link. It may have expired or been revoked."
-                        </div>
-                    }
+            @if (!string.IsNullOrWhiteSpace(Model?.RecipientNote))
+            {
+                <div class="alert alert-info" role="alert">
+                    <strong>Note from sender:</strong> @Model.RecipientNote
                 </div>
+            }
+
+            <div class="alert alert-warning" role="alert">
+                @(expiresAt.HasValue ? $"Expires: {expiresAt.Value.LocalDateTime:G}" : "No expiry set") · Remaining views: @(remainingViews > 0 ? remainingViews : 0)
             </div>
-        </div>
+
+            <div class="row g-4">
+                <div class="col-12">
+                    <label class="form-label">Website</label>
+                    <input type="text" class="form-control" value="@Model?.WebsiteName" readonly />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Username</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="@Model?.Username" readonly id="shared-username" />
+                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-username">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Password</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="@Model?.Password" readonly id="shared-password" />
+                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-password">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="@Model?.Email" readonly id="shared-email" />
+                        <button class="btn btn-outline-secondary" type="button" data-copy="#shared-email">Copy</button>
+                    </div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model?.Url))
+                {
+                    <div class="col-md-6">
+                        <label class="form-label">URL</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="@Model.Url" readonly id="shared-url" />
+                            <button class="btn btn-outline-secondary" type="button" data-copy="#shared-url">Copy</button>
+                            <a class="btn btn-outline-primary" href="@Model.Url" target="_blank" rel="noopener noreferrer">Open</a>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="alert alert-light border mt-4" role="alert">
+                <strong>Tip:</strong> Close this tab once you're done so nobody else can view it.
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning" role="alert">
+                @Model?.Message ?? "We couldn't load this secure link. It may have expired or been revoked."
+            </div>
+        }
     </div>
 </div>
 

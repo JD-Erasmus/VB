@@ -1,68 +1,85 @@
-@model VB.Models.Vault
-<h4 class="text-center">Create new password</h4>
-<hr />
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+﻿@model VB.Models.Vault
+@{
+    ViewData["Title"] = "Create vault";
+}
 
-            <div class="mb-3">
-                <label asp-for="Username" class="form-label"></label>
-                <input asp-for="Username" class="form-control" />
-                <span asp-validation-for="Username" class="text-danger"></span>
-            </div>
+<div class="form-page">
+    <div class="section-heading">
+        <h1 class="section-heading-title">
+            <i class="bi bi-plus-circle me-2"></i>
+            Create vault entry
+        </h1>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Back to vaults
+        </a>
+    </div>
+    <div class="form-card">
+        <form asp-action="Create" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <div class="input-group"
-                     data-password-tools
-                     data-generate-url="@Url.Action("GeneratePassword", "Vaults")">
-                    <input asp-for="Password"
-                           class="form-control"
-                           id="passwordInput"
-                           type="password"
-                           data-password-input />
-                    <button type="button"
-                            class="btn btn-outline-secondary"
-                            data-password-action="toggle"
-                            data-label-show="Show"
-                            data-label-hide="Hide">Show</button>
-                    <button type="button"
-                            class="btn btn-outline-secondary"
-                            data-password-action="copy"
-                            data-label-default="Copy"
-                            data-label-done="Copied!">Copy</button>
-                    <button type="button"
-                            class="btn btn-outline-primary"
-                            data-password-action="generate"
-                            data-label-default="Generate"
-                            data-label-busy="Generating...">Generate</button>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label asp-for="WebsiteName" class="form-label">Website name</label>
+                    <input asp-for="WebsiteName" class="form-control" placeholder="e.g. Github" />
+                    <span asp-validation-for="WebsiteName" class="text-danger"></span>
                 </div>
-                <div class="form-text">Use Generate to create a strong password, Show to view, and Copy to clipboard.</div>
-                <span asp-validation-for="Password" class="text-danger"></span>
+                <div class="col-md-6">
+                    <label asp-for="Url" class="form-label">URL</label>
+                    <input asp-for="Url" class="form-control" placeholder="https://" />
+                    <span asp-validation-for="Url" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Username" class="form-label">Username</label>
+                    <input asp-for="Username" class="form-control" />
+                    <span asp-validation-for="Username" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Email" class="form-label">Email</label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Password" class="form-label">Password</label>
+                    <div class="input-group"
+                         data-password-tools
+                         data-generate-url="@Url.Action("GeneratePassword", "Vaults")">
+                        <input asp-for="Password"
+                               class="form-control"
+                               id="passwordInput"
+                               type="password"
+                               data-password-input />
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-password-action="toggle"
+                                data-label-show="Show"
+                                data-label-hide="Hide">Show</button>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-password-action="copy"
+                                data-label-default="Copy"
+                                data-label-done="Copied!">Copy</button>
+                        <button type="button"
+                                class="btn btn-outline-primary"
+                                data-password-action="generate"
+                                data-label-default="Generate"
+                                data-label-busy="Generating...">Generate</button>
+                    </div>
+                    <div class="form-text">Generate creates a strong password, Show reveals it, and Copy places it on your clipboard.</div>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Url" class="form-label"></label>
-                <input asp-for="Url" class="form-control" />
-                <span asp-validation-for="Url" class="text-danger"></span>
-            </div>
-
-            <div class="mb-4">
-                <label asp-for="WebsiteName" class="form-label"></label>
-                <input asp-for="WebsiteName" class="form-control" />
-                <span asp-validation-for="WebsiteName" class="text-danger"></span>
-            </div>
-
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-end">
-                <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
-                <input type="submit" value="Create" class="btn btn-primary" />
+            <div class="form-footer">
+                <div class="text-muted small">All changes are saved once you press <strong>Create vault</strong>.</div>
+                <div class="d-flex gap-2">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Create vault
+                    </button>
+                </div>
             </div>
         </form>
     </div>

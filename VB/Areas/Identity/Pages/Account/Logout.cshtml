@@ -1,21 +1,41 @@
-﻿@page
+@page
 @model LogoutModel
 @{
     ViewData["Title"] = "Log out";
 }
 
-<header>
-    <h1>@ViewData["Title"]</h1>
-    @{
-        if (User.Identity?.IsAuthenticated ?? false)
-        {
-            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/", new { area = "" })" method="post">
-                <button type="submit" class="nav-link btn btn-link text-dark">Click here to Logout</button>
-            </form>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <span class="auth-eyebrow">Session</span>
+            <h1>@ViewData["Title"]</h1>
+            <p>Control how and when you leave VaultBridge.</p>
+        </div>
+
+        @{
+            if (User.Identity?.IsAuthenticated ?? false)
+            {
+                <p class="auth-subtext">Ready to end your session? Confirm below and you can return any time.</p>
+                <form class="auth-form" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/", new { area = "" })" method="post">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        Sign out
+                    </button>
+                </form>
+            }
+            else
+            {
+                <div class="auth-message">
+                    You have successfully logged out of the application.
+                </div>
+                <div class="auth-actions">
+                    <a class="btn btn-outline-secondary" asp-area="" asp-controller="Home" asp-action="Index">
+                        Return to overview
+                    </a>
+                    <a class="btn btn-primary" asp-area="Identity" asp-page="/Account/Login">
+                        Log back in
+                    </a>
+                </div>
+            }
         }
-        else
-        {
-            <p>You have successfully logged out of the application.</p>
-        }
-    }
-</header>
+    </div>
+</div>

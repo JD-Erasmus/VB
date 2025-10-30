@@ -1,73 +1,76 @@
-﻿@page
+@page
 @model RegisterModel
 @{
     ViewData["Title"] = "Create your account";
 }
 
-<div class="row justify-content-center">
-    <div class="col-12 col-md-8 col-lg-6 col-xl-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-4 p-md-5">
-                <h1 class="h3 mb-1">@ViewData["Title"]</h1>
-                <p class="text-muted mb-4">Join VB to manage your secure vaults.</p>
-
-                <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post" novalidate>
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
-
-                    <div class="form-floating mb-3">
-                        <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                        <label asp-for="Input.Email"></label>
-                        <span asp-validation-for="Input.Email" class="text-danger small"></span>
-                    </div>
-
-                    <div class="form-floating mb-3">
-                        <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="••••••••" />
-                        <label asp-for="Input.Password"></label>
-                        <span asp-validation-for="Input.Password" class="text-danger small"></span>
-                    </div>
-
-                    <div class="form-floating mb-4">
-                        <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="••••••••" />
-                        <label asp-for="Input.ConfirmPassword"></label>
-                        <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
-                    </div>
-
-                    <button id="registerSubmit" type="submit" class="btn btn-primary w-100 btn-lg">Create account</button>
-                </form>
-
-                <div class="text-center mt-3">
-                    <span class="text-muted">Already have an account?</span>
-                    <a class="ms-1" asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Log in</a>
-                </div>
-
-                <hr class="my-4" />
-
-                <section>
-                    <h2 class="h6 mb-3">Or sign up with</h2>
-                    @{
-                        if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                        {
-                            <div class="alert alert-info mb-0">
-                                External authentication providers are not configured.
-                            </div>
-                        }
-                        else
-                        {
-                            <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="d-grid gap-2">
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit" class="btn btn-outline-secondary" name="provider" value="@provider.Name" title="Register using your @provider.DisplayName account">
-                                        Continue with @provider.DisplayName
-                                    </button>
-                                }
-                            </form>
-                        }
-                    }
-                </section>
-            </div>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <span class="auth-eyebrow">Join VaultBridge</span>
+            <h1>@ViewData["Title"]</h1>
+            <p>Set up your credentials to unlock secure vault sharing.</p>
         </div>
-        <p class="small text-muted text-center mt-3 mb-0">By creating an account, you agree to our terms and privacy policy.</p>
+
+        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post" novalidate class="auth-form">
+            <div asp-validation-summary="ModelOnly" class="auth-validation text-danger" role="alert"></div>
+
+            <div class="auth-form-group">
+                <label asp-for="Input.Email" class="form-label">Email address</label>
+                <input asp-for="Input.Email" class="form-control form-control-lg" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <span asp-validation-for="Input.Email" class="auth-field-validation"></span>
+            </div>
+
+            <div class="auth-form-group">
+                <label asp-for="Input.Password" class="form-label">Password</label>
+                <input asp-for="Input.Password" class="form-control form-control-lg" autocomplete="new-password" aria-required="true" placeholder="Create a password" />
+                <span asp-validation-for="Input.Password" class="auth-field-validation"></span>
+            </div>
+
+            <div class="auth-form-group">
+                <label asp-for="Input.ConfirmPassword" class="form-label">Confirm password</label>
+                <input asp-for="Input.ConfirmPassword" class="form-control form-control-lg" autocomplete="new-password" aria-required="true" placeholder="Repeat your password" />
+                <span asp-validation-for="Input.ConfirmPassword" class="auth-field-validation"></span>
+            </div>
+
+            <button id="registerSubmit" type="submit" class="btn btn-primary btn-lg w-100">
+                Create account
+            </button>
+        </form>
+
+        <div class="auth-secondary">
+            <span>Already have an account?</span>
+            <a class="auth-link" asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Log in</a>
+        </div>
+
+        <div class="auth-divider">
+            <span>Or sign up with</span>
+        </div>
+
+        <section class="auth-alt">
+            @{
+                if ((Model.ExternalLogins?.Count ?? 0) == 0)
+                {
+                    <div class="auth-message">
+                        External authentication providers are not configured.
+                    </div>
+                }
+                else
+                {
+                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="auth-alt-grid">
+                        @foreach (var provider in Model.ExternalLogins!)
+                        {
+                            <button type="submit" class="btn btn-outline-secondary" name="provider" value="@provider.Name" title="Register using your @provider.DisplayName account">
+                                Continue with @provider.DisplayName
+                            </button>
+                        }
+                    </form>
+                }
+            }
+        </section>
     </div>
+
+    <p class="auth-page-note">By creating an account, you agree to our terms and privacy policy.</p>
 </div>
 
 @section Scripts {

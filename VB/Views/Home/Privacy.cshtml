@@ -1,6 +1,29 @@
 ﻿@{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Privacy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="form-page">
+    <div class="form-card">
+        <div class="section-heading">
+            <h1 class="section-heading-title">
+                <i class="bi bi-shield-check me-2"></i>
+                Privacy & data retention
+            </h1>
+            <span class="utility-chip">
+                <i class="bi bi-lock-fill"></i>
+                Updated @DateTime.UtcNow.ToString("MMMM yyyy")
+            </span>
+        </div>
+        <p class="text-muted mb-4">
+            VaultBridge stores only the minimum metadata required to provision share links and audit vault activity. All credential
+            payloads stay encrypted at rest and are transmitted via TLS. Shared links inherit their creator's retention policy—when a
+            link expires or is revoked, its payload is permanently destroyed.
+        </p>
+        <ul class="text-muted mb-0">
+            <li class="mb-2">Vault entries are scoped to their owners; access requires explicit sharing.</li>
+            <li class="mb-2">Secure links honor the stricter of max-views or expiration limits.</li>
+            <li class="mb-2">Audit history is retained for 30 days to support compliance exports.</li>
+            <li class="mb-0">You can request data removal or export at any time via support.</li>
+        </ul>
+    </div>
+</div>

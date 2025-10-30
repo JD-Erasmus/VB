@@ -1,84 +1,239 @@
-﻿@model IEnumerable<VB.Models.Vault>
+﻿
+@model IEnumerable<VB.Models.Vault>
 
 @{
     ViewData["Title"] = "Vaults";
+
+    var vaults = Model?.ToList() ?? new List<VB.Models.Vault>();
+
+    var statusLabels = new[]
+    {
+        "Stable",
+        "Rotation soon",
+        "Shared recently"
+    };
+
+    string FormatInitial(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "?";
+        }
+
+        return value.Trim()[0].ToString().ToUpperInvariant();
+    }
+
+    string FormatDomain(VB.Models.Vault vault)
+    {
+        if (!string.IsNullOrWhiteSpace(vault.Url) && Uri.TryCreate(vault.Url, UriKind.Absolute, out var uri))
+        {
+            return uri.Host ?? vault.Url;
+        }
+
+        return "direct-entry";
+    }
+
+    string MaskIdentity(string textValue)
+    {
+        if (string.IsNullOrWhiteSpace(textValue) || textValue.Length <= 2)
+        {
+            return textValue;
+        }
+
+        return $"{textValue.Substring(0, 1)}***{textValue.Substring(textValue.Length - 1, 1)}";
+    }
 }
 
-<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
-    <h1 class="h3 m-0">@ViewData["Title"]</h1>
-    <div class="d-flex gap-2 align-items-center">
-        <div class="input-group">
-            <span class="input-group-text" id="search-addon">Search</span>
-            <input type="text" id="vaultSearch" class="form-control" placeholder="Filter by website, username, or email" aria-describedby="search-addon" />
+<div class="vault-page">
+    <div class="vault-header">
+        <div>
+            <div class="vault-header-eyebrow">Passwords</div>
+            <h1 class="h3 mb-0">Vault index</h1>
         </div>
-        <a asp-action="Create" class="btn btn-primary">Create New</a>
+        <div class="vault-header-actions">
+            <div class="input-group vault-search">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text"
+                       id="vaultSearch"
+                       class="form-control"
+                       placeholder="Search websites, usernames, emails" />
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="vaultsTable">
-                <thead class="table-light">
-                    <tr>
-                        <th>@Html.DisplayNameFor(model => model.First().Username)</th>
-                        <th>@Html.DisplayNameFor(model => model.First().Password)</th>
-                        <th>@Html.DisplayNameFor(model => model.First().Email)</th>
-                        <th>@Html.DisplayNameFor(model => model.First().Url)</th>
-                        <th>@Html.DisplayNameFor(model => model.First().WebsiteName)</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @if (Model != null && Model.Any())
-                {
-                    foreach (var item in Model)
-                    {
-                        <tr>
-                            <td class="username">@Html.DisplayFor(modelItem => item.Username)</td>
-                            <td>
-                                <span aria-hidden="true">••••••••</span>
-                                <span class="visually-hidden">Password hidden</span>
-                            </td>
-                            <td class="email">@Html.DisplayFor(modelItem => item.Email)</td>
-                            <td class="url">
-                                @if (!string.IsNullOrWhiteSpace(item.Url))
-                                {
-                                    <a href="@item.Url" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
-                                        @item.Url
-                                    </a>
-                                }
-                            </td>
-                            <td class="site">@Html.DisplayFor(modelItem => item.WebsiteName)</td>
-                            <td class="text-end">
-                                <div class="btn-group" role="group" aria-label="Actions">
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-success"
-                                            data-share
-                                            data-vault-id="@item.Id"
-                                            data-website="@item.WebsiteName">
-                                        Share
-                                    </button>
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
-                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" data-delete data-name="@item.WebsiteName">Delete</a>
-                                </div>
-                            </td>
-                        </tr>
+    <div class="card border-0 shadow-sm">
+        <div class="card-body d-flex flex-wrap gap-3 align-items-center justify-content-between">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="text-muted small">Choose how you want to browse your vaults.</div>
+                <div class="btn-group vault-view-toggle" role="group" aria-label="View toggle">
+                    <button type="button" class="btn btn-outline-secondary active" data-view-trigger="board">
+                        <i class="bi bi-kanban me-1"></i>
+                        Board
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-view-trigger="table">
+                        <i class="bi bi-table me-1"></i>
+                        Table
+                    </button>
+                </div>
+            </div>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>
+                New vault
+            </a>
+        </div>
+    </div>
+    <div class="view-panels">
+        <div class="view-panel is-active" data-view-panel="board">
+            @if (vaults.Any())
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3" id="vaultBoard">
+                    @{
+                        var index = 0;
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No vault entries found.</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+                    @foreach (var vault in vaults)
+                    {
+                        var status = statusLabels[index % statusLabels.Length];
+                        var searchValue = $"{vault.WebsiteName} {vault.Username} {vault.Email} {vault.Url}";
+                        <div class="col" data-board-card data-search="@searchValue">
+                            <div class="card vault-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start justify-content-between mb-3">
+                                        <span class="vault-card-avatar">@FormatInitial(vault.WebsiteName)</span>
+                                        <span class="badge text-bg-light text-uppercase vault-status">@status</span>
+                                    </div>
+                                    <h2 class="h5 fw-semibold mb-1">@vault.WebsiteName</h2>
+                                    <div class="text-muted small mb-3">@FormatDomain(vault)</div>
+                                    <dl class="row g-1 small mb-3">
+                                        <dt class="col-5 text-muted">Owner</dt>
+                                        <dd class="col-7 text-truncate">@MaskIdentity(vault.Username ?? string.Empty)</dd>
+                                        <dt class="col-5 text-muted">Email</dt>
+                                        <dd class="col-7 text-truncate">@vault.Email</dd>
+                                    </dl>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-success"
+                                                data-share
+                                                data-vault-id="@vault.Id"
+                                                data-website="@vault.WebsiteName">
+                                            <i class="bi bi-link-45deg me-1"></i>
+                                            Share
+                                        </button>
+                                        <a asp-action="Details" asp-route-id="@vault.Id" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-eye me-1"></i>
+                                            View
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@vault.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil me-1"></i>
+                                            Edit
+                                        </a>
+                                        <a asp-action="Delete"
+                                           asp-route-id="@vault.Id"
+                                           class="btn btn-sm btn-outline-danger"
+                                           data-delete
+                                           data-name="@vault.WebsiteName">
+                                            <i class="bi bi-trash me-1"></i>
+                                            Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        index++;
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="vault-empty card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-inbox text-muted display-5 d-block mb-3"></i>
+                        <p class="lead mb-1">You have no stored vault entries yet.</p>
+                        <p class="text-muted mb-3">Create your first record to populate the board.</p>
+                        <a asp-action="Create" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-lg me-1"></i>
+                            Create vault
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="view-panel d-none" data-view-panel="table">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="vaultsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Website</th>
+                                    <th scope="col">Username</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">URL</th>
+                                    <th scope="col" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (vaults.Any())
+                                {
+                                    foreach (var item in vaults)
+                                    {
+                                        var searchValue = $"{item.WebsiteName} {item.Username} {item.Email} {item.Url}";
+                                        <tr data-search="@searchValue">
+                                            <td class="site fw-semibold">@item.WebsiteName</td>
+                                            <td class="username text-muted">@item.Username</td>
+                                            <td class="email">@item.Email</td>
+                                            <td class="url">
+                                                @if (!string.IsNullOrWhiteSpace(item.Url))
+                                                {
+                                                    <a href="@item.Url" class="text-decoration-none" target="_blank" rel="noopener noreferrer">
+                                                        @FormatDomain(item)
+                                                    </a>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="btn-group btn-group-sm" role="group" aria-label="Row actions">
+                                                    <button type="button"
+                                                            class="btn btn-outline-success"
+                                                            data-share
+                                                            data-vault-id="@item.Id"
+                                                            data-website="@item.WebsiteName">
+                                                        <i class="bi bi-link-45deg"></i>
+                                                    </button>
+                                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-secondary">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a asp-action="Delete"
+                                                       asp-route-id="@item.Id"
+                                                       class="btn btn-outline-danger"
+                                                       data-delete
+                                                       data-name="@item.WebsiteName">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            Table view will populate once you add vault entries.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-
 <form id="deleteForm" method="post" class="d-none">
     @Html.AntiForgeryToken()
 </form>
@@ -99,22 +254,17 @@
                         <div class="form-control-plaintext fw-semibold" id="shareVaultName">-</div>
                     </div>
                     <div class="mb-3">
-                        <label for="shareRecipientNote" class="form-label">Recipient note (optional)</label>
-                        <input type="text"
-                               class="form-control"
-                               id="shareRecipientNote"
-                               maxlength="200"
-                               placeholder="e.g. For accounting login" />
+                        <label for="shareRecipientNote" class="form-label">Recipient note</label>
+                        <textarea class="form-control" id="shareRecipientNote" rows="3" placeholder="Optional message to include with the secure link"></textarea>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="shareExpiry" class="form-label">Expires in</label>
+                            <label for="shareExpiry" class="form-label">Link expiry</label>
                             <select class="form-select" id="shareExpiry">
-                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
                                 <option value="60" selected>1 hour</option>
-                                <option value="720">12 hours</option>
-                                <option value="1440">1 day</option>
-                                <option value="10080">7 days</option>
+                                <option value="180">3 hours</option>
+                                <option value="1440">24 hours</option>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -148,14 +298,14 @@
         </div>
     </div>
 </div>
-
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const input = document.getElementById('vaultSearch');
+            const searchInput = document.getElementById('vaultSearch');
             const table = document.getElementById('vaultsTable');
-            const rows = () => Array.from(table.querySelectorAll('tbody tr'));
-            const normalize = (s) => (s || '').toString().toLowerCase();
+            const viewButtons = document.querySelectorAll('[data-view-trigger]');
+            const panels = document.querySelectorAll('[data-view-panel]');
+            const deleteForm = document.getElementById('deleteForm');
             const shareModalElement = document.getElementById('shareModal');
             const shareForm = document.getElementById('shareForm');
             const shareVaultName = document.getElementById('shareVaultName');
@@ -171,22 +321,77 @@
             const shareModal = shareModalElement && window.bootstrap ? new bootstrap.Modal(shareModalElement) : null;
             const antiForgeryToken = shareForm?.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
-            input?.addEventListener('input', function () {
-                const q = normalize(this.value);
-                rows().forEach(tr => {
-                    const username = normalize(tr.querySelector('.username')?.textContent);
-                    const email = normalize(tr.querySelector('.email')?.textContent);
-                    const url = normalize(tr.querySelector('.url')?.textContent);
-                    const site = normalize(tr.querySelector('.site')?.textContent);
-                    const match = username.includes(q) || email.includes(q) || url.includes(q) || site.includes(q);
-                    tr.style.display = match ? '' : 'none';
+            const normalize = (value) => (value || '').toString().toLowerCase();
+            const tableRows = () => table ? Array.from(table.querySelectorAll('tbody tr')) : [];
+            const boardCards = () => Array.from(document.querySelectorAll('[data-board-card]'));
+
+            function setActiveView(target) {
+                if (!target) {
+                    return;
+                }
+
+                viewButtons.forEach(btn => {
+                    const isMatch = btn.getAttribute('data-view-trigger') === target;
+                    btn.classList.toggle('active', isMatch);
+                    btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+                });
+
+                panels.forEach(panel => {
+                    const isMatch = panel.getAttribute('data-view-panel') === target;
+                    panel.classList.toggle('is-active', isMatch);
+                    panel.classList.toggle('d-none', !isMatch);
+                });
+            }
+
+            function applyFilter(query) {
+                const q = normalize(query);
+
+                tableRows().forEach(row => {
+                    const haystack = normalize(row.getAttribute('data-search') || row.textContent);
+                    row.style.display = haystack.includes(q) ? '' : 'none';
+                });
+
+                boardCards().forEach(card => {
+                    const haystack = normalize(card.getAttribute('data-search') || card.textContent);
+                    card.classList.toggle('d-none', !haystack.includes(q));
+                });
+            }
+
+            viewButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setActiveView(btn.getAttribute('data-view-trigger'));
                 });
             });
 
-            document.addEventListener('click', function (e) {
-                const shareBtn = e.target.closest('[data-share]');
+            searchInput?.addEventListener('input', function () {
+                applyFilter(this.value);
+            });
+
+            document.addEventListener('click', function (event) {
+                const deleteLink = event.target.closest('[data-delete]');
+                const shareBtn = event.target.closest('[data-share]');
+
+                if (deleteLink) {
+                    event.preventDefault();
+                    const vaultName = deleteLink.getAttribute('data-name') || 'this entry';
+                    Swal?.fire?.({
+                        title: 'Delete vault?',
+                        text: `This will remove ${vaultName} from your vault.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Delete',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#dc3545'
+                    }).then(result => {
+                        if (result.isConfirmed && deleteForm) {
+                            deleteForm.action = deleteLink.getAttribute('href') ?? '';
+                            deleteForm.submit();
+                        }
+                    });
+                }
+
                 if (shareBtn && shareModal && shareVaultId && shareVaultName) {
-                    e.preventDefault();
+                    event.preventDefault();
                     shareVaultId.value = shareBtn.getAttribute('data-vault-id') ?? '';
                     shareVaultName.textContent = shareBtn.getAttribute('data-website') || 'this entry';
                     if (shareRecipientNote) shareRecipientNote.value = '';
@@ -197,31 +402,8 @@
                     if (shareResultMeta) shareResultMeta.textContent = '';
                     shareSubmitBtn?.removeAttribute('disabled');
                     shareSubmitBtn?.classList.remove('disabled');
-                    shareSubmitBtn && (shareSubmitBtn.textContent = 'Create link');
                     shareModal.show();
-                    return;
                 }
-
-                const link = e.target.closest('a[data-delete]');
-                if (!link) return;
-                e.preventDefault();
-                const name = link.getAttribute('data-name') || 'this entry';
-                if (!window.Swal) return; // Ensure SweetAlert2 is loaded
-                Swal.fire({
-                    title: 'Delete?',
-                    text: `Are you sure you want to delete ${name}?`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Delete',
-                    cancelButtonText: 'Cancel',
-                    confirmButtonColor: '#dc3545'
-                }).then(result => {
-                    if (result.isConfirmed) {
-                        const form = document.getElementById('deleteForm');
-                        form.action = link.getAttribute('href');
-                        form.submit();
-                    }
-                });
             });
 
             shareForm?.addEventListener('submit', async function (event) {
@@ -332,6 +514,9 @@
                     Swal?.fire?.('Copy failed', 'Please copy the link manually.', 'warning');
                 }
             });
+
+            setActiveView('board');
+            applyFilter(searchInput?.value ?? '');
         });
     </script>
 }

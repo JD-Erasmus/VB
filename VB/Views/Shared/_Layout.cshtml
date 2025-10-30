@@ -1,60 +1,77 @@
 ﻿@{
-    var title = ViewData["Title"] as string ?? "VB";
+    var title = ViewData["Title"] as string ?? "VaultBridge";
+    var currentController = (ViewContext.RouteData.Values["controller"] as string)?.ToLowerInvariant()
+        ?? (ViewContext.RouteData.Values["page"] as string)?.ToLowerInvariant()
+        ?? string.Empty;
+    var currentAction = (ViewContext.RouteData.Values["action"] as string)?.ToLowerInvariant()
+        ?? string.Empty;
 }
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@title - VB</title>
+    <title>@title · VaultBridge</title>
 
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
 </head>
-<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
-    <header class="shadow-sm">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Vaults" asp-action="Index">
-                    <span class="me-2">??</span> VB
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="app-header-inner">
+                <a class="app-brand" asp-area="" asp-controller="Vaults" asp-action="Index">
+                    <span class="app-brand-icon">
+                        <i class="bi bi-shield-lock-fill"></i>
+                    </span>
+                    <span>VaultBridge</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="mainNavbar">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Vaults" asp-action="Index">Vaults</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    <div class="d-flex align-items-center">
-                        @await Html.PartialAsync("_LoginPartial")
-                    </div>
+                <nav class="app-nav" aria-label="Primary navigation">
+                    <a class="app-nav-link @(currentController == "home" && currentAction != "privacy" ? "active" : string.Empty)" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-stars"></i>
+                        <span>Overview</span>
+                    </a>
+                    <a class="app-nav-link @(currentController == "vaults" ? "active" : string.Empty)" asp-controller="Vaults" asp-action="Index">
+                        <i class="bi bi-kanban"></i>
+                        <span>Vaults</span>
+                    </a>
+                    <a class="app-nav-link @(currentAction == "privacy" ? "active" : string.Empty)" asp-controller="Home" asp-action="Privacy">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Privacy</span>
+                    </a>
+                </nav>
+                <div class="app-header-actions">
+                    <a asp-controller="Vaults" asp-action="Create" class="btn btn-outline-primary d-none d-md-inline-flex">
+                        <i class="bi bi-plus-lg me-1"></i>
+                        New Vault
+                    </a>
+                    @await Html.PartialAsync("_LoginPartial")
                 </div>
             </div>
-        </nav>
-    </header>
+        </header>
 
-    <main role="main" class="flex-grow-1 py-4">
-        <div class="container">
-            @RenderBody()
-        </div>
-    </main>
+        <main role="main" class="app-main">
+            <div class="container">
+                @RenderBody()
+            </div>
+        </main>
 
-    <footer class="mt-auto border-top bg-white">
-        <div class="container py-3 text-muted small d-flex flex-wrap gap-2 justify-content-between align-items-center">
-            <div>
-                <span class="fw-semibold">VB</span> &mdash; Secure Vaults
+        <footer class="app-footer">
+            <div class="app-footer-inner">
+                <div>
+                    <span class="fw-semibold">VaultBridge</span> · secure sharing without friction
+                </div>
+                <div>
+                    &copy; @DateTime.UtcNow.Year VaultBridge. All rights reserved.
+                </div>
             </div>
-            <div>
-                &copy; @DateTime.UtcNow.Year &middot; All rights reserved
-            </div>
-        </div>
-    </footer>
+        </footer>
+    </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
